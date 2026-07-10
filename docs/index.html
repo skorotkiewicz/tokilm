@@ -208,7 +208,7 @@
 <div id="samples" class="hidden">
   <img src="tokilm.png" alt="TokiLM" />
   <div class="title">Chat with TokiLM</div>
-  <div class="subtitle">9M parameter LLM running locally in your browser</div>
+  <div class="subtitle">9M parameter LLM with English translations, running locally in your browser</div>
   <div class="pills">
     <button class="pill" data-msg="toki">toki</button>
     <button class="pill" data-msg="moku li pona">moku li pona</button>
@@ -224,7 +224,7 @@
 <div id="chat" class="hidden"></div>
 
 <div id="input-row" class="hidden">
-  <button id="hint-btn" title="What can Guppy talk about?">&#x1F4A1;</button>
+  <button id="hint-btn" title="What can TokiLM talk about?">&#x1F4A1;</button>
   <input type="text" id="user-input" placeholder="say something to TokiLM..." autocomplete="off" />
   <button id="send-btn" onclick="send()">send</button>
 </div>
@@ -233,13 +233,14 @@
 
 <script type="module">
 // -- Config
-const MODEL_BASE = "https://huggingface.co/Grizzlykw/tokilm-9m-chat/resolve/main";
+const MODEL_BASE = "https://huggingface.co/Grizzlykw/tokilm-9m-chat/resolve/main/translation";
 const CONFIG = {
   vocab_size: 4096, max_seq_len: 128, d_model: 384,
   n_layers: 6, n_heads: 6, ffn_hidden: 768,
   pad_id: 0, bos_id: 1, eos_id: 2,
 };
 const GEN = { temperature: 0.7, top_k: 50, max_tokens: 32 };
+const TRANSLATE_GEN = { temperature: 0.3, top_k: 20, max_tokens: 64 };
 
 // -- Globals
 let session = null;
@@ -300,7 +301,7 @@ async function load(ort) {
   document.getElementById("user-input").focus();
 
   // Verify tokenizer
-  const testIds = tokenizer.encode("<|im_start|>user\ntoki<|im_end|>\n<|im_start|>assistant\n");
+  const testIds = tokenizer.encode("<|im_start|>assistant\ntoki");
   const ok = testIds.length > 0 && testIds[0] === 1;
   console.log("Tokenizer check:", ok ? "PASS" : "FAIL", testIds);
 }
@@ -423,11 +424,11 @@ function buildTokenizer(json) {
 }
 
 // -- Inference (autoregressive generation)
-async function generate(inputIds) {
+async function generate(inputIds, options = GEN) {
   const ort = window.ort;
   let ids = inputIds.slice();
 
-  for (let i = 0; i < GEN.max_tokens; i++) {
+  for (let i = 0; i < options.max_tokens; i++) {
     const seq = ids.slice(-CONFIG.max_seq_len);
     const tensor = new ort.Tensor("int64",
       BigInt64Array.from(seq.map(BigInt)), [1, seq.length]);
@@ -440,15 +441,15 @@ async function generate(inputIds) {
       lastLogits[v] = logits[offset + v];
     }
 
-    if (GEN.temperature !== 1.0) {
+    if (options.temperature !== 1.0) {
       for (let v = 0; v < CONFIG.vocab_size; v++) {
-        lastLogits[v] /= GEN.temperature;
+        lastLogits[v] /= options.temperature;
       }
     }
 
-    if (GEN.top_k > 0) {
+    if (options.top_k > 0) {
       const sorted = [...lastLogits].sort((a, b) => b - a);
-      const cutoff = sorted[Math.min(GEN.top_k, sorted.length) - 1];
+      const cutoff = sorted[Math.min(options.top_k, sorted.length) - 1];
       for (let v = 0; v < CONFIG.vocab_size; v++) {
         if (lastLogits[v] < cutoff) lastLogits[v] = -Infinity;
       }
@@ -476,6 +477,13 @@ async function generate(inputIds) {
   return ids.slice(inputIds.length);
 }
 
+function decodeGenerated(outputIds) {
+  let text = tokenizer.decode(outputIds).trim();
+  if (text.includes("<|im_end|>")) text = text.split("<|im_end|>")[0];
+  if (text.includes("<|im_start|>")) text = text.split("<|im_start|>")[0];
+  return text.trim();
+}
+
 // -- Chat logic
 async function send() {
   const input = document.getElementById("user-input");
@@ -496,18 +504,19 @@ async function send() {
   addMessage("user", text);
   const typing = addTyping();
 
-  const prompt = `<|im_start|>user\n${text}<|im_end|>\n<|im_start|>assistant\n`;
+  const prompt = `<|im_start|>assistant\n${text}`;
   const inputIds = tokenizer.encode(prompt);
 
-  const outputIds = await generate(inputIds);
-  let reply = tokenizer.decode(outputIds).trim();
-
-  if (reply.includes("<|im_end|>")) reply = reply.split("<|im_end|>")[0];
-  if (reply.includes("<|im_start|>")) reply = reply.split("<|im_start|>")[0];
-  reply = reply.trim() || "toki.";
+  const reply = decodeGenerated(await generate(inputIds)) || "toki.";
+  typing.textContent = "\u{1F331} TokiLM is translating...";
+  const translationPrompt = `<|im_start|>assistant\nToki Pona: ${reply}\nEnglish:`;
+  const translationIds = tokenizer.encode(translationPrompt);
+  const translation = decodeGenerated(
+    await generate(translationIds, TRANSLATE_GEN)
+  ) || "?";
 
   typing.remove();
-  addMessage("fish", reply);
+  addMessage("fish", `${reply} (${translation})`);
 
   input.disabled = false;
   document.getElementById("send-btn").disabled = false;

@@ -54,4 +54,7 @@ Desktop.ini
 *.tmp
 *.bak
 
-hf_export/
+hf_export*/
+data*/
+checkpoints*/
+tr_checkpoints/

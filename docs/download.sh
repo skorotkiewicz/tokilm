@@ -4,7 +4,7 @@
 set -e
 
 REPO="Grizzlykw/tokilm-9m-chat"
-BASE="https://huggingface.co/${REPO}/resolve/main"
+BASE="https://huggingface.co/${REPO}/resolve/main/translation"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Downloading from ${REPO}..."
