@@ -15,5 +15,3 @@ curl -fSL "${BASE}/tokenizer.json" -o "${DIR}/tokenizer.json"
 echo "  tokenizer.json $(du -h "${DIR}/tokenizer.json" | cut -f1)"
 
 echo "Done. Run: cd docs && python -m http.server 8080"
-
-To resume this session: pi --session 019f4b75-47b2-72c0-ad61-a3eaaaa2e0c1
