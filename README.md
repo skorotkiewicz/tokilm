@@ -91,16 +91,20 @@ python -m tokilm train     # train for 10k steps -> checkpoints/
 With [uv](https://github.com/astral-sh/uv):
 
 ```bash
+uv sync --extra cpu # or --extra gpu
+
 uv run python -m tokilm prepare
 uv run python -m tokilm train --device cuda --max-steps 10000
 uv run python -m tokilm chat --checkpoint checkpoints/final_model.pt --tokenizer data/tokenizer.json --prompt "toki"
+
+uv run python -m tokilm chat --checkpoint hf_export/pytorch_model.bin --tokenizer hf_export/tokenizer.json
 ```
 
 Quick smoke run:
 
 ```bash
 uv run python -m tokilm prepare --n-samples 64 --data-dir data
-uv run python -m tokilm train --max-steps 1 --data-dir data --output-dir .smoke-checkpoints --device cpu
+uv run python -m tokilm train --max-steps 1 --data-dir data --output-dir .smoke-checkpoints --device cpu # or --device cuda
 ```
 
 ---

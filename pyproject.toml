@@ -11,9 +11,6 @@ dependencies = [
   "tokenizers>=0.19",
 ]
 
-[project.scripts]
-tokilm = "tokilm.__main__:main"
-
 [project.optional-dependencies]
 cpu = ["numpy>=1.26", "torch>=2.3"]
 gpu = ["numpy>=1.26", "torch>=2.3"]
