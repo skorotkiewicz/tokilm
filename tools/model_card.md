@@ -11,7 +11,7 @@ pipeline_tag: text-generation
 ---
 
 <p align="center">
-  <img src="assets/tokilm.png" alt="TokiLM" width="300"/>
+  <img src="https://github.com/skorotkiewicz/tokilm/blob/main/assets/tokilm.png?raw=true" alt="TokiLM" width="300"/>
 </p>
 
 <p align="center">
