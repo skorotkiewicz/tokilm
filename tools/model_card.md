@@ -80,7 +80,7 @@ print(r["choices"][0]["message"]["content"])
 
 ## Links
 
-- **Repo:** [github.com/Grizzlykw/tokilm](https://github.com/Grizzlykw/tokilm)
+- **Repo:** [github.com/skorotkiewicz/tokilm](https://github.com/skorotkiewicz/tokilm)
 - **Dataset:** [huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences)
 
 ## License

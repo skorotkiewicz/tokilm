@@ -1,7 +1,7 @@
 """Generate the training and chat Colab notebooks.
 
 Writes `train_tokilm.ipynb` and `use_tokilm.ipynb` into the repo root.
-Open them in Colab (https://colab.research.google.com/github/Grizzlykw/tokilm/blob/main/train_tokilm.ipynb)
+Open them in Colab (https://colab.research.google.com/github/skorotkiewicz/tokilm/blob/main/train_tokilm.ipynb)
 to train TokiLM or chat with a pretrained checkpoint in the browser.
 
 Usage:
