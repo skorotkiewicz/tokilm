@@ -62,9 +62,11 @@ def train(max_steps=None, data_dir=None, output_dir=None, device=None):
     print(f"Device: {device}")
 
     tokenizer_path = os.path.join(tc.data_dir, "tokenizer.json")
+    #===
     from tokenizers import Tokenizer
 
     mc.vocab_size = Tokenizer.from_file(tokenizer_path).get_vocab_size()
+    #===/
     model = TokiLM(mc).to(device)
     print(model.param_summary())
 
