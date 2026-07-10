@@ -6,6 +6,7 @@ import random
 
 DATA_DIR = "data"
 DATASET_NAME = "finnnnnnnnnnnn/toki-pona-sentences"
+TRANSLATION_DATASET_NAME = "NetherQuartz/tatoeba-tokipona"
 VOCAB_SIZE = 4096
 
 SPECIAL_TOKENS = [
@@ -19,8 +20,27 @@ def clean_text(text):
     return " ".join((text or "").split())
 
 
-def format_sample(text):
-    return f"<|im_start|>assistant\n{clean_text(text)}<|im_end|>"
+def format_sample(*lines):
+    return f"<|im_start|>assistant\n{'\n'.join(clean_text(line) for line in lines)}<|im_end|>"
+
+
+def translation_samples(rows, n_samples=None):
+    samples = []
+    for row in rows:
+        source = clean_text(row.get("source"))
+        source_lang = clean_text(row.get("source_lang"))
+        toki_pona = clean_text(row.get("tok"))
+        if not source or not source_lang or not toki_pona:
+            continue
+
+        # ponytail: source/tok already spans the source languages; fan-out columns can wait for benchmarks.
+        samples.extend([
+            format_sample(f"{source_lang}: {source}", f"Toki Pona: {toki_pona}"),
+            format_sample(f"Toki Pona: {toki_pona}", f"{source_lang}: {source}"),
+        ])
+        if n_samples is not None and len(samples) >= n_samples * 2:
+            break
+    return samples
 
 
 def split_texts(texts, n_samples=None, eval_ratio=0.05, seed=42):
@@ -39,10 +59,10 @@ def split_texts(texts, n_samples=None, eval_ratio=0.05, seed=42):
     return items[n_eval:], items[:n_eval]
 
 
-def write_jsonl(path, texts):
+def write_jsonl(path, samples):
     with open(path, "w", encoding="utf-8") as f:
-        for text in texts:
-            f.write(json.dumps({"text": format_sample(text)}, ensure_ascii=False) + "\n")
+        for text in samples:
+            f.write(json.dumps({"text": text}, ensure_ascii=False) + "\n")
 
 
 def train_tokenizer(texts, save_path, vocab_size=VOCAB_SIZE):
@@ -75,29 +95,38 @@ def prepare(data_dir=DATA_DIR, n_samples=None, eval_ratio=0.05, seed=42):
     print(f"Loading {DATASET_NAME}...")
     from datasets import load_dataset
 
-    ds = load_dataset(DATASET_NAME, split="train")
+    sentences = load_dataset(DATASET_NAME, split="train")
     train_texts, eval_texts = split_texts(
-        (row["text"] for row in ds),
+        (row["text"] for row in sentences),
         n_samples=n_samples,
         eval_ratio=eval_ratio,
         seed=seed,
     )
+    train_samples = [format_sample(text) for text in train_texts]
+    eval_samples = [format_sample(text) for text in eval_texts]
+
+    print(f"Loading {TRANSLATION_DATASET_NAME}...")
+    translations = load_dataset(TRANSLATION_DATASET_NAME)
+    train_samples.extend(translation_samples(translations["train"], n_samples))
+    eval_samples.extend(translation_samples(translations["validation"], n_samples))
+    random.Random(seed).shuffle(train_samples)
+    random.Random(seed).shuffle(eval_samples)
 
     train_path = os.path.join(data_dir, "train.jsonl")
     eval_path = os.path.join(data_dir, "eval.jsonl")
-    write_jsonl(train_path, train_texts)
-    write_jsonl(eval_path, eval_texts)
-    print(f"Prepared {len(train_texts) + len(eval_texts):,} samples:")
-    print(f"  Train: {len(train_texts):,}")
-    print(f"  Eval:  {len(eval_texts):,}")
+    write_jsonl(train_path, train_samples)
+    write_jsonl(eval_path, eval_samples)
+    print(f"Prepared {len(train_samples) + len(eval_samples):,} samples:")
+    print(f"  Train: {len(train_samples):,}")
+    print(f"  Eval:  {len(eval_samples):,}")
 
     tokenizer_path = os.path.join(data_dir, "tokenizer.json")
     tokenizer = train_tokenizer(
-        [format_sample(text) for text in train_texts + eval_texts],
+        train_samples + eval_samples,
         tokenizer_path,
     )
 
-    test = "<|im_start|>assistant\nsina pona<|im_end|>"
+    test = format_sample("English: I am happy.", "Toki Pona: mi pilin pona.")
     ids = tokenizer.encode(test).ids
     decoded = tokenizer.decode(ids)
     print(f"\nTokenizer test:")

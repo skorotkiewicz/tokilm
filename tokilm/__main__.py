@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(prog="tokilm")
     sub = parser.add_subparsers(dest="cmd")
 
-    prep = sub.add_parser("prepare", help="Download Toki Pona data and train tokenizer")
+    prep = sub.add_parser("prepare", help="Download Toki Pona and translation data, then train tokenizer")
     prep.add_argument("--data-dir", default="data")
     prep.add_argument("--n-samples", type=int)
     prep.add_argument("--eval-ratio", type=float, default=0.05)

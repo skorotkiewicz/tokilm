@@ -2,7 +2,7 @@
 Export TokiLM training data to HuggingFace.
 
 TokiLM's training data is prepared locally by `python -m tokilm prepare`,
-which downloads finnnnnnnnnnnnn/toki-pona-sentences and writes:
+which downloads the monolingual and Tatoeba translation corpora and writes:
     data/train.jsonl
     data/eval.jsonl
 each line: {"text": "<|im_start|>assistant\\n...<|im_end|>"}

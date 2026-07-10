@@ -1,4 +1,4 @@
-"""Manual Toki Pona prompts for spot-checking generations."""
+"""Manual prompts for spot-checking generations and translations."""
 
 EVAL_CASES = [
     "toki",
@@ -6,6 +6,8 @@ EVAL_CASES = [
     "mi moku",
     "jan li toki",
     "tenpo suno la",
+    "English: I am happy.\nToki Pona:",
+    "Toki Pona: sina pona.\nEnglish:",
 ]
 
 

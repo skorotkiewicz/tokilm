@@ -4,10 +4,11 @@
   <img src="assets/tokilm.png" alt="TokiLM" width="400"/>
 </p>
 
-<p align="center"><em>A ~9M parameter LLM that speaks Toki Pona.</em></p>
+<p align="center"><em>A ~9M parameter LLM that speaks and translates Toki Pona.</em></p>
 
 <p align="center">
   <a href="https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences"><img src="https://img.shields.io/badge/🤗_Dataset-toki--pona--sentences-blue" alt="Dataset"/></a>&nbsp;
+  <a href="https://huggingface.co/datasets/NetherQuartz/tatoeba-tokipona"><img src="https://img.shields.io/badge/🤗_Dataset-tatoeba--tokipona-blue" alt="Translation dataset"/></a>&nbsp;
   <a href="https://huggingface.co/Grizzlykw/tokilm-9m-chat"><img src="https://img.shields.io/badge/🤗_Model-tokilm--9m-orange" alt="Model"/></a>&nbsp;
   <a href="https://github.com/skorotkiewicz/tokilm/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"/></a>
 </p>
@@ -36,9 +37,9 @@ TokiLM> mi pilin pona. mi lukin e suno.
 
 ## What is TokiLM?
 
-TokiLM is a tiny language model that speaks [Toki Pona](https://en.wikipedia.org/wiki/Toki_Pona) — a minimalist constructed language with ~120 root words. It generates short, simple sentences, one token at a time.
+TokiLM is a tiny language model that speaks [Toki Pona](https://en.wikipedia.org/wiki/Toki_Pona) — a minimalist constructed language with ~120 root words. It generates short sentences and learns translation between Toki Pona and the languages in its aligned corpus.
 
-It's trained from scratch on the [finnnnnnnnnnnn/toki-pona-sentences](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences) corpus, runs on a single GPU in ~5 minutes, and produces a model small enough to run in a browser.
+It's trained from scratch on the [Toki Pona sentence corpus](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences) and [Tatoeba translation pairs](https://huggingface.co/datasets/NetherQuartz/tatoeba-tokipona), runs on a single GPU, and produces a model small enough to run in a browser.
 
 ---
 
@@ -97,6 +98,9 @@ uv run python -m tokilm prepare
 uv run python -m tokilm train --device cuda --max-steps 10000
 uv run python -m tokilm chat --checkpoint checkpoints/final_model.pt --tokenizer data/tokenizer.json --prompt "toki"
 
+# Translation prompts use `Source language: text` followed by `Target language:`
+uv run python -m tokilm chat --checkpoint checkpoints/final_model.pt --tokenizer data/tokenizer.json --prompt $'English: I am happy.\nToki Pona:'
+
 uv run python -m tokilm chat --checkpoint hf_export/pytorch_model.bin --tokenizer hf_export/tokenizer.json
 ```
 
@@ -125,18 +129,21 @@ Set `HF_TOKEN` and `HF_REPO` (and `HF_DATASET`) in `.env` to avoid passing flags
 
 ## Dataset
 
-**[finnnnnnnnnnnn/toki-pona-sentences](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences)** on HuggingFace — a corpus of Toki Pona sentences.
+`python -m tokilm prepare` combines:
+
+- [finnnnnnnnnnnn/toki-pona-sentences](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences) — monolingual Toki Pona sentences.
+- [NetherQuartz/tatoeba-tokipona](https://huggingface.co/datasets/NetherQuartz/tatoeba-tokipona) — aligned multilingual ↔ Toki Pona pairs. Each `source`/`tok` row is emitted in both directions; its official validation split stays in eval data.
 
 | | |
 |---|---|
-| Source | Toki Pona sentence collection |
 | Format | `{"text": "<|im_start|>assistant\n...<|im_end|>"}` (one JSON object per line) |
-| Preparation | `python -m tokilm prepare` wraps each sentence as a single assistant turn and trains a 4096-token BPE tokenizer |
+| Translation prompt | `English: I am happy.\nToki Pona:` |
+| Preparation | `python -m tokilm prepare` formats both corpora and trains a 4096-token BPE tokenizer |
 
 ```python
 from datasets import load_dataset
-ds = load_dataset("finnnnnnnnnnnn/toki-pona-sentences")
-print(ds["train"][0])
+ds = load_dataset("NetherQuartz/tatoeba-tokipona")
+print(ds["train"][0]["source"], ds["train"][0]["tok"])
 ```
 
 ---
@@ -164,7 +171,7 @@ tools/
 
 ## Design Decisions
 
-**Why no system prompt?** Every training sample has the same format. A 9M model can't conditionally follow instructions — the language is baked into the weights. Keeping the prompt minimal saves tokens per inference.
+**Why no system prompt?** Generation remains completion-style. Translation uses short `Source language:` / `Target language:` labels, which fit the 128-token context without adding an instruction template.
 
 **Why single-turn only?** Multi-turn degrades at turn 3-4 due to the 128-token context window. Single-turn is reliable.
 

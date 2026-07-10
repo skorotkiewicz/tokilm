@@ -66,19 +66,19 @@ def build():
     cells.append(md(
         "# TokiLM — Tiny Toki Pona Language Model\n"
         "\n"
-        "Train a ~9M parameter LLM that speaks Toki Pona.\n"
+        "Train a ~9M parameter LLM that speaks and translates Toki Pona.\n"
         "\n"
         "**What this notebook does:**\n"
-        "1. Downloads the Toki Pona sentence corpus from HuggingFace\n"
+        "1. Downloads monolingual and aligned translation data from HuggingFace\n"
         "2. Trains a BPE tokenizer on the data\n"
         "3. Trains a 6-layer vanilla transformer (8.7M params)\n"
-        "4. Tests the model with sample Toki Pona prompts\n"
+        "4. Tests generation and translation prompts\n"
         "\n"
         "**Architecture:** 6 layers, 384 dim, 6 heads, ReLU FFN, LayerNorm, 4096 vocab\n"
         "\n"
         "**Runtime:** ~5 min on T4 GPU\n"
         "\n"
-        "**Result:** A model that speaks in short Toki Pona sentences."
+        "**Result:** A model that generates and translates short Toki Pona sentences."
     ))
 
     # ══════════════════════════════════════════════════════════════════
@@ -140,12 +140,16 @@ def build():
     cells.append(md(
         "## 3. Prepare Data\n"
         "\n"
-        "Download the Toki Pona sentence corpus from HuggingFace and train a BPE tokenizer.\n"
+        "Download Toki Pona sentences plus multilingual Tatoeba pairs and train a BPE tokenizer.\n"
         "\n"
         "Each sentence is wrapped as a single assistant turn in ChatML:\n"
         "```\n"
         "<|im_start|>assistant\n"
         "toki a. sina pona.<|im_end|>\n"
+        "\n"
+        "<|im_start|>assistant\n"
+        "English: I am happy.\n"
+        "Toki Pona: mi pilin pona.<|im_end|>\n"
         "```"
     ))
 
@@ -153,8 +157,8 @@ def build():
         "import os\n"
         "from prepare_data import prepare\n"
         "\n"
-        "# prepare() downloads finnnnnnnnnnnnn/toki-pona-sentences, wraps each sentence\n"
-        "# as a single assistant turn, and trains a 4096-token BPE tokenizer.\n"
+        "# prepare() downloads both corpora, formats generation and bidirectional translation\n"
+        "# samples, and trains a 4096-token BPE tokenizer.\n"
         "os.makedirs('data', exist_ok=True)\n"
         "prepare('data')\n"
         "\n"
@@ -204,6 +208,7 @@ def build():
         "The model learns to:\n"
         "- Generate valid Toki Pona words\n"
         "- Stay in the Toki Pona language\n"
+        "- Translate short aligned sentences to and from Toki Pona\n"
         "- Stop generating at the right time (learn the `<|im_end|>` token)"
     ))
 
@@ -246,6 +251,8 @@ def build():
         "    ('mi olin e sina','love'),\n"
         "    ('sewi li seme',   'sky'),\n"
         "    ('mi lape',        'sleep'),\n"
+        "    ('English: I am happy.\\nToki Pona:', 'en → tok'),\n"
+        "    ('Toki Pona: sina pona.\\nEnglish:', 'tok → en'),\n"
         "]\n"
         "\n"
         "print(f'{\"Topic\":<12s}  {\"You\":<35s}  TokiLM')\n"
