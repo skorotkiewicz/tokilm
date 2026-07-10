@@ -100,9 +100,18 @@ def main():
 
     engine = TokiInference(args.checkpoint, args.tokenizer, args.device)
 
+    def with_english(text):
+        prompt = f"Toki Pona: {text}\nEnglish:"
+        result = engine.chat_completion(
+            [{"role": "user", "content": prompt}],
+            temperature=0.3, max_tokens=64, top_k=20,
+        )
+        translation = result["choices"][0]["message"]["content"]
+        return f"{text} ({translation})"
+
     if args.prompt:
         result = engine.chat_completion([{"role": "user", "content": args.prompt}])
-        print(result["choices"][0]["message"]["content"])
+        print(with_english(result["choices"][0]["message"]["content"]))
         return
 
     print("\nTokiLM Chat (type 'quit' to exit)")
@@ -113,7 +122,7 @@ def main():
         result = engine.chat_completion([{"role": "user", "content": inp}])
         msg = result["choices"][0]["message"]
         if msg.get("content"):
-            print(f"TokiLM> {msg['content']}")
+            print(f"TokiLM> {with_english(msg['content'])}")
 
 
 if __name__ == "__main__":

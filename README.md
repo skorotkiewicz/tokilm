@@ -77,9 +77,11 @@ Or interactively:
 python -m tokilm chat
 ```
 
+The CLI runs a second inference for every reply and appends its English translation in parentheses.
+
 ```
 You> sina pona
-TokiLM> pona. sina pilin seme.
+TokiLM> pona. sina pilin seme. (Good. How do you feel?)
 ```
 
 ### Train your own
@@ -95,7 +97,7 @@ With [uv](https://github.com/astral-sh/uv):
 uv sync --extra cpu # or --extra gpu
 
 uv run python -m tokilm prepare
-uv run python -m tokilm train --device cuda --max-steps 10000
+uv run python -m tokilm train --device cuda --max-steps 50000
 uv run python -m tokilm chat --checkpoint checkpoints/final_model.pt --tokenizer data/tokenizer.json --prompt "toki"
 
 # Translation prompts use `Source language: text` followed by `Target language:`
