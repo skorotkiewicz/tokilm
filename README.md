@@ -1,6 +1,6 @@
 # TokiLM
 
-Tiny Toki Pona language model based on GuppyLM.
+Tiny Toki Pona language model.
 
 ## Usage
 

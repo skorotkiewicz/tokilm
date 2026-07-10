@@ -1,4 +1,4 @@
-"""TokiLM: a tiny vanilla transformer based on GuppyLM."""
+"""TokiLM: a tiny vanilla transformer."""
 
 import math
 import torch
