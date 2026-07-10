@@ -3,90 +3,53 @@ license: mit
 task_categories:
   - text-generation
 language:
-  - en
-size_categories:
-  - 10K<n<100K
+  - tok
 tags:
-  - fish
-  - character
+  - tokipona
   - tiny-llm
-  - synthetic
-pretty_name: GuppyLM Chat
+  - from-scratch
+pretty_name: TokiLM Training Data
 ---
 
-<p align="center">
-  <img src="assets/guppy.png" alt="GuppyLM" width="300"/>
-</p>
+# TokiLM Training Data
 
-<p align="center">
-  <a href="https://github.com/arman-bd/guppylm"><img src="https://img.shields.io/badge/GitHub-guppylm-181717?logo=github" alt="GitHub"/></a>&nbsp;
-  <a href="https://huggingface.co/arman-bd/guppylm-9M"><img src="https://img.shields.io/badge/🤗_Model-guppylm--9M-orange" alt="Model"/></a>&nbsp;
-  <a href="https://colab.research.google.com/github/arman-bd/guppylm/blob/main/train_guppylm.ipynb"><img src="https://img.shields.io/badge/Open_in-Colab-F9AB00?logo=googlecolab" alt="Colab"/></a>
-  <br/>
-  <a href="https://www.linkedin.com/pulse/build-your-own-language-model-5-minutes-i-made-mine-hossain--supif/"><img src="https://img.shields.io/badge/Article-LinkedIn-0A66C2?logo=linkedin" alt="LinkedIn Article"/></a>&nbsp;
-  <a href="https://arman-bd.medium.com/build-your-own-llm-in-5-minutes-i-made-mine-talk-like-a-fish-e20c338a3d14"><img src="https://img.shields.io/badge/Article-Medium-000000?logo=medium" alt="Medium Article"/></a>
-  <br/><br/>
-  <a href="https://arman-bd.github.io/guppylm/"><img src="https://img.shields.io/badge/Try_in-Browser-64ffda?style=for-the-badge&logo=webassembly&logoColor=white" alt="Browser Demo"/></a>
-</p>
+The data used to train [TokiLM](https://huggingface.co/Grizzlykw/tokilm-9m-chat), a ~9M parameter
+language model that speaks [Toki Pona](https://en.wikipedia.org/wiki/Toki_Pona).
 
-# GuppyLM Chat Dataset
+## Source
 
-Training data for GuppyLM — a ~9M parameter LLM that talks like a small fish.
+The raw corpus is [finnnnnnnnnnnn/toki-pona-sentences](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences)
+— a collection of Toki Pona sentences.
 
-## Dataset Description
+## Preparation
 
-60K single-turn conversations between a human and Guppy, a small fish character.
-Guppy speaks in short, lowercase sentences about water, food, light, and tank life.
-It doesn't understand human abstractions.
-
-### Example
+Each sentence is wrapped as a single assistant turn in ChatML and written to `data/train.jsonl`
+(and a small eval split to `data/eval.jsonl`):
 
 ```
-Input:  are you hungry
-Output: yes. always yes. i will swim to the top right now.
-
-Input:  what do you think about politics
-Output: i don't know what politics is. is it wet.
-
-Input:  goodnight guppy
-Output: night. i'll rest near the bottom. maybe tomorrow there will be pellets.
+<|im_start|>assistant
+toki a. sina pona.<|im_end|>
 ```
 
-## Fields
+A 4096-token BPE tokenizer (special tokens `<pad>`, `<|im_start|>`, `<|im_end|>`) is trained on the
+formatted text. This is done by:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `input` | string | User message |
-| `output` | string | Guppy's response |
-| `category` | string | Topic category (60 categories) |
-
-## Categories
-
-Greetings, feelings, temperature (hot/cold), food, light, water, about, confused (human things),
-tank, noise, night, lonely, misc, goodbye, bubbles, glass, reflection, breathing, swimming,
-colors, taste, plants, filter, algae, snail, glass tapping, scared, excited, bored, curious,
-happy, tired, outside, cat, rain, seasons, music, visitors, children, meaning of life, time,
-memory, dreams, size, future, past, name, weather, sleep, friends, jokes, fear, love, age,
-intelligence, bathroom, health, singing, TV.
+```bash
+python -m tokilm prepare
+```
 
 ## Usage
 
 ```python
 from datasets import load_dataset
-ds = load_dataset("arman-bd/guppylm-60k-generic")
+ds = load_dataset("finnnnnnnnnnnn/toki-pona-sentences")
 print(ds["train"][0])
-# {'input': 'hi guppy', 'output': 'hello. the water is nice today.', 'category': 'greeting'}
 ```
-
-## Generation
-
-Data is synthetically generated using template composition with randomized components
-(tank objects, food types, activities, body parts, etc.) for high output diversity.
 
 ## Links
 
-- **Repo:** [github.com/arman-bd/guppylm](https://github.com/arman-bd/guppylm)
-- **Model:** [huggingface.co/arman-bd/guppylm-9M](https://huggingface.co/arman-bd/guppylm-9M)
+- **Model:** [huggingface.co/Grizzlykw/tokilm-9m-chat](https://huggingface.co/Grizzlykw/tokilm-9m-chat)
+- **Source dataset:** [huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences](https://huggingface.co/datasets/finnnnnnnnnnnn/toki-pona-sentences)
 
 ## License
 

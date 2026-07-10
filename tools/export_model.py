@@ -1,11 +1,16 @@
 """
-Export GuppyLM to HuggingFace standard format.
+Export TokiLM to HuggingFace standard format.
 
 Standard layout:
     pytorch_model.bin    — state_dict only
     config.json          — model architecture config
     tokenizer.json       — BPE tokenizer
     README.md            — model card
+
+Usage:
+    python tools/export_model.py                       # export locally to hf_export/
+    python tools/export_model.py --repo Grizzlykw/tokilm-9m-chat --token hf_xxx
+    python tools/export_model.py --local-only          # skip HF push
 """
 
 import argparse
@@ -49,8 +54,8 @@ def export_and_push(checkpoint_path, tokenizer_path, repo_id, token, local_dir="
     # 2. config.json — model architecture only
     config_path = os.path.join(local_dir, "config.json")
     hf_config = {
-        "model_type": "guppylm",
-        "architectures": ["GuppyLM"],
+        "model_type": "tokilm",
+        "architectures": ["TokiLM"],
         "vocab_size": config["vocab_size"],
         "max_position_embeddings": config["max_seq_len"],
         "hidden_size": config["d_model"],
@@ -84,15 +89,6 @@ def export_and_push(checkpoint_path, tokenizer_path, repo_id, token, local_dir="
             f.write(card)
         print(f"  Saved {readme_dest}")
 
-    # 5. guppy.png — asset
-    asset_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "guppy.png")
-    if os.path.exists(asset_path):
-        asset_dir = os.path.join(local_dir, "assets")
-        os.makedirs(asset_dir, exist_ok=True)
-        import shutil
-        shutil.copy2(asset_path, os.path.join(asset_dir, "guppy.png"))
-        print(f"  Saved assets/guppy.png")
-
     # Push to HF
     if token and repo_id:
         api = HfApi(token=token)
@@ -114,7 +110,7 @@ def export_and_push(checkpoint_path, tokenizer_path, repo_id, token, local_dir="
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Export GuppyLM to HuggingFace format")
+    parser = argparse.ArgumentParser(description="Export TokiLM to HuggingFace format")
     parser.add_argument("--checkpoint", default="checkpoints/best_model.pt")
     parser.add_argument("--tokenizer", default="data/tokenizer.json")
     parser.add_argument("--repo", default=None)

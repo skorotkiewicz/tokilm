@@ -1,4 +1,12 @@
-"""Generate the GuppyLM Colab training notebook."""
+"""Generate the training and chat Colab notebooks.
+
+Writes `train_tokilm.ipynb` and `use_tokilm.ipynb` into the repo root.
+Open them in Colab (https://colab.research.google.com/github/Grizzlykw/tokilm/blob/main/train_tokilm.ipynb)
+to train TokiLM or chat with a pretrained checkpoint in the browser.
+
+Usage:
+    python tools/make_colab.py
+"""
 
 import json
 import os
@@ -39,11 +47,12 @@ def code(text):
 
 # Source files to embed in the notebook
 FILES = [
-    ("config.py",    "guppylm/config.py"),
-    ("model.py",     "guppylm/model.py"),
-    ("dataset.py",   "guppylm/dataset.py"),
-    ("train.py",     "guppylm/train.py"),
-    ("inference.py", "guppylm/inference.py"),
+    ("config.py",       "tokilm/config.py"),
+    ("model.py",        "tokilm/model.py"),
+    ("dataset.py",      "tokilm/dataset.py"),
+    ("prepare_data.py", "tokilm/prepare_data.py"),
+    ("train.py",        "tokilm/train.py"),
+    ("inference.py",    "tokilm/inference.py"),
 ]
 
 
@@ -55,21 +64,21 @@ def build():
     # ══════════════════════════════════════════════════════════════════
 
     cells.append(md(
-        "# GuppyLM — Your Friendly Fish\n"
+        "# TokiLM — Tiny Toki Pona Language Model\n"
         "\n"
-        "Train a ~9M parameter LLM that talks like a small fish.\n"
+        "Train a ~9M parameter LLM that speaks Toki Pona.\n"
         "\n"
         "**What this notebook does:**\n"
-        "1. Downloads 60K fish conversation dataset from HuggingFace\n"
+        "1. Downloads the Toki Pona sentence corpus from HuggingFace\n"
         "2. Trains a BPE tokenizer on the data\n"
         "3. Trains a 6-layer vanilla transformer (8.7M params)\n"
-        "4. Tests the model with sample conversations\n"
+        "4. Tests the model with sample Toki Pona prompts\n"
         "\n"
         "**Architecture:** 6 layers, 384 dim, 6 heads, ReLU FFN, LayerNorm, 4096 vocab\n"
         "\n"
         "**Runtime:** ~5 min on T4 GPU\n"
         "\n"
-        "**Result:** A fish that speaks in short lowercase sentences about water, food, and light."
+        "**Result:** A model that speaks in short Toki Pona sentences."
     ))
 
     # ══════════════════════════════════════════════════════════════════
@@ -96,10 +105,10 @@ def build():
         "import os, shutil\n"
         "\n"
         "# Start fresh — removes stale files from previous runs\n"
-        "if os.path.exists('/content/guppy'):\n"
-        "    shutil.rmtree('/content/guppy')\n"
-        "os.makedirs('/content/guppy')\n"
-        "os.chdir('/content/guppy')\n"
+        "if os.path.exists('/content/tokilm'):\n"
+        "    shutil.rmtree('/content/tokilm')\n"
+        "os.makedirs('/content/tokilm')\n"
+        "os.chdir('/content/tokilm')\n"
         "print(f'Working dir: {os.getcwd()}')"
     ))
 
@@ -114,6 +123,7 @@ def build():
         "- `config.py` — model and training hyperparameters\n"
         "- `model.py` — transformer architecture\n"
         "- `dataset.py` — data loading and batching\n"
+        "- `prepare_data.py` — download corpus + train tokenizer\n"
         "- `train.py` — training loop\n"
         "- `inference.py` — chat interface"
     ))
@@ -130,65 +140,28 @@ def build():
     cells.append(md(
         "## 3. Prepare Data\n"
         "\n"
-        "Download the fish conversation dataset from HuggingFace and train a BPE tokenizer.\n"
+        "Download the Toki Pona sentence corpus from HuggingFace and train a BPE tokenizer.\n"
         "\n"
-        "The dataset has 60K single-turn conversations across 60 topics:\n"
-        "greetings, food, temperature, water, tank life, emotions, philosophy (fish-level), and more.\n"
-        "\n"
-        "Each sample is formatted as ChatML:\n"
+        "Each sentence is wrapped as a single assistant turn in ChatML:\n"
         "```\n"
-        "<|im_start|>user\n"
-        "hi guppy<|im_end|>\n"
         "<|im_start|>assistant\n"
-        "hello. the water is nice today.<|im_end|>\n"
+        "toki a. sina pona.<|im_end|>\n"
         "```"
     ))
 
     cells.append(code(
-        "import json, os\n"
-        "from datasets import load_dataset\n"
-        "from tokenizers import Tokenizer, models, trainers, pre_tokenizers, decoders, processors\n"
+        "import os\n"
+        "from prepare_data import prepare\n"
         "\n"
-        "# ── Download from HuggingFace ──\n"
-        "HF_DATASET = 'arman-bd/guppylm-60k-generic'\n"
-        "ds = load_dataset(HF_DATASET)\n"
-        "print(f'Downloaded: {len(ds[\"train\"]):,} train, {len(ds[\"test\"]):,} test samples')\n"
-        "\n"
-        "# ── Format into ChatML and save as JSONL ──\n"
+        "# prepare() downloads finnnnnnnnnnnnn/toki-pona-sentences, wraps each sentence\n"
+        "# as a single assistant turn, and trains a 4096-token BPE tokenizer.\n"
         "os.makedirs('data', exist_ok=True)\n"
-        "texts = []\n"
+        "prepare('data')\n"
         "\n"
-        "for split, path in [('train', 'data/train.jsonl'), ('test', 'data/eval.jsonl')]:\n"
-        "    with open(path, 'w') as f:\n"
-        "        for row in ds[split]:\n"
-        "            text = (\n"
-        "                f'<|im_start|>user\\n{row[\"input\"]}<|im_end|>\\n'\n"
-        "                f'<|im_start|>assistant\\n{row[\"output\"]}<|im_end|>'\n"
-        "            )\n"
-        "            f.write(json.dumps({'text': text, 'category': row['category']}) + '\\n')\n"
-        "            texts.append(text)\n"
-        "    print(f'  {path}: {len(ds[split]):,} samples')\n"
-        "\n"
-        "# ── Train BPE tokenizer on the data ──\n"
-        "tokenizer = Tokenizer(models.BPE())\n"
-        "tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)\n"
-        "tokenizer.decoder = decoders.ByteLevel()\n"
-        "\n"
-        "trainer = trainers.BpeTrainer(\n"
-        "    vocab_size=4096,\n"
-        "    special_tokens=['<pad>', '<|im_start|>', '<|im_end|>'],\n"
-        "    min_frequency=2,\n"
-        "    show_progress=True,\n"
-        ")\n"
-        "tokenizer.train_from_iterator(texts, trainer)\n"
-        "tokenizer.post_processor = processors.ByteLevel(trim_offsets=False)\n"
-        "tokenizer.save('data/tokenizer.json')\n"
-        "print(f'  Tokenizer: {tokenizer.get_vocab_size()} tokens')\n"
-        "\n"
-        "# ── Preview ──\n"
+        "import json\n"
         "with open('data/train.jsonl') as f:\n"
         "    sample = json.loads(f.readline())\n"
-        "print(f'\\nSample ({sample[\"category\"]}):\\n{sample[\"text\"]}')"
+        "print(f'\\nSample:\\n{sample[\"text\"]}')"
     ))
 
     # ══════════════════════════════════════════════════════════════════
@@ -202,12 +175,12 @@ def build():
     ))
 
     cells.append(code(
-        "from config import GuppyConfig\n"
-        "from model import GuppyLM\n"
+        "from config import TokiConfig\n"
+        "from model import TokiLM\n"
         "import torch\n"
         "\n"
-        "config = GuppyConfig()\n"
-        "model = GuppyLM(config)\n"
+        "config = TokiConfig()\n"
+        "model = TokiLM(config)\n"
         "print(model.param_summary())\n"
         "print(f'  Layers: {config.n_layers}, Heads: {config.n_heads}, FFN: {config.ffn_hidden}')\n"
         "print(f'  Vocab: {config.vocab_size}, Max seq: {config.max_seq_len}')\n"
@@ -229,9 +202,8 @@ def build():
         "10,000 steps with cosine LR schedule. Takes ~2 min on T4.\n"
         "\n"
         "The model learns to:\n"
-        "- Respond in short, lowercase sentences\n"
-        "- Stay in character as a fish\n"
-        "- Cover 60 different conversation topics\n"
+        "- Generate valid Toki Pona words\n"
+        "- Stay in the Toki Pona language\n"
         "- Stop generating at the right time (learn the `<|im_end|>` token)"
     ))
 
@@ -248,10 +220,10 @@ def build():
     ))
 
     cells.append(code(
-        "from inference import GuppyInference\n"
+        "from inference import TokiInference\n"
         "import torch\n"
         "\n"
-        "engine = GuppyInference(\n"
+        "engine = TokiInference(\n"
         "    'checkpoints/best_model.pt', 'data/tokenizer.json',\n"
         "    device='cuda' if torch.cuda.is_available() else 'cpu'\n"
         ")\n"
@@ -260,26 +232,23 @@ def build():
         "    r = engine.chat_completion([{'role': 'user', 'content': prompt}], max_tokens=64)\n"
         "    return r['choices'][0]['message'].get('content', '').strip()\n"
         "\n"
-        "# Test across different topics\n"
+        "# Test across different Toki Pona seeds\n"
         "tests = [\n"
-        "    ('hi guppy',                      'greeting'),\n"
-        "    ('are you hungry',                'food'),\n"
-        "    ('it is really hot today',        'temperature'),\n"
-        "    ('how is the water',              'water'),\n"
-        "    ('do you like bubbles',           'bubbles'),\n"
-        "    ('what is the internet',          'confused'),\n"
-        "    ('do you get lonely',             'lonely'),\n"
-        "    ('the cat is looking at you',     'cat'),\n"
-        "    ('tell me a joke',                'joke'),\n"
-        "    ('what do you dream about',       'dreams'),\n"
-        "    ('do you love me',                'love'),\n"
-        "    ('what is the meaning of life',   'meaning'),\n"
-        "    ('sorry i tapped the glass',      'glass_tap'),\n"
-        "    ('it is raining outside',         'rain'),\n"
-        "    ('goodnight guppy',               'night'),\n"
+        "    ('toki',           'greeting'),\n"
+        "    ('sina pona',      'praise'),\n"
+        "    ('moku li pona',   'food'),\n"
+        "    ('telo li lili',   'water'),\n"
+        "    ('mi wile musi',   'fun'),\n"
+        "    ('sina pilin seme','feelings'),\n"
+        "    ('mi sona ala',    'confused'),\n"
+        "    ('pipi li lukin',  'bug'),\n"
+        "    ('o toki e jan',   'people'),\n"
+        "    ('mi olin e sina','love'),\n"
+        "    ('sewi li seme',   'sky'),\n"
+        "    ('mi lape',        'sleep'),\n"
         "]\n"
         "\n"
-        "print(f'{\"Topic\":<12s}  {\"You\":<35s}  Guppy')\n"
+        "print(f'{\"Topic\":<12s}  {\"You\":<35s}  TokiLM')\n"
         "print('=' * 100)\n"
         "for prompt, topic in tests:\n"
         "    reply = chat(prompt)\n"
@@ -304,11 +273,11 @@ def build():
         "\n"
         "from huggingface_hub import HfApi, login\n"
         "import torch, json, os, shutil\n"
-        "from config import GuppyConfig\n"
-        "from model import GuppyLM\n"
+        "from config import TokiConfig\n"
+        "from model import TokiLM\n"
         "\n"
         "HF_TOKEN = os.environ.get('HF_TOKEN', '')  # Or paste your token here\n"
-        "HF_REPO = os.environ.get('HF_REPO', 'arman-bd/guppylm-9M')  # Or change this\n"
+        "HF_REPO = os.environ.get('HF_REPO', 'Grizzlykw/tokilm-9m-chat')  # Or change this\n"
         "\n"
         "# Load checkpoint\n"
         "ckpt = torch.load('checkpoints/best_model.pt', map_location='cpu', weights_only=False)\n"
@@ -320,8 +289,8 @@ def build():
         "\n"
         "with open('hf_export/config.json', 'w') as f:\n"
         "    json.dump({\n"
-        "        'model_type': 'guppylm',\n"
-        "        'architectures': ['GuppyLM'],\n"
+        "        'model_type': 'tokilm',\n"
+        "        'architectures': ['TokiLM'],\n"
         "        'vocab_size': cfg['vocab_size'],\n"
         "        'max_position_embeddings': cfg['max_seq_len'],\n"
         "        'hidden_size': cfg['d_model'],\n"
@@ -338,9 +307,9 @@ def build():
         "print(f'pytorch_model.bin: {os.path.getsize(\"hf_export/pytorch_model.bin\")/1e6:.1f} MB')\n"
         "\n"
         "# ── ONNX format (quantized uint8) ──\n"
-        "valid_fields = {f.name for f in GuppyConfig.__dataclass_fields__.values()}\n"
-        "config = GuppyConfig(**{k: v for k, v in cfg.items() if k in valid_fields})\n"
-        "model = GuppyLM(config)\n"
+        "valid_fields = {f.name for f in TokiConfig.__dataclass_fields__.values()}\n"
+        "config = TokiConfig(**{k: v for k, v in cfg.items() if k in valid_fields})\n"
+        "model = TokiLM(config)\n"
         "model.load_state_dict(ckpt['model_state_dict'])\n"
         "model.eval()\n"
         "\n"
@@ -383,21 +352,21 @@ def build():
     cells.append(code(
         "import os\n"
         "\n"
-        "!cd /content && tar czf guppylm.tar.gz \\\n"
-        "    guppy/checkpoints/best_model.pt \\\n"
-        "    guppy/checkpoints/config.json \\\n"
-        "    guppy/data/tokenizer.json \\\n"
-        "    guppy/model.py \\\n"
-        "    guppy/config.py \\\n"
-        "    guppy/inference.py \\\n"
-        "    guppy/hf_export/model.onnx\n"
+        "!cd /content && tar czf tokilm.tar.gz \\\n"
+        "    tokilm/checkpoints/best_model.pt \\\n"
+        "    tokilm/checkpoints/config.json \\\n"
+        "    tokilm/data/tokenizer.json \\\n"
+        "    tokilm/model.py \\\n"
+        "    tokilm/config.py \\\n"
+        "    tokilm/inference.py \\\n"
+        "    tokilm/hf_export/model.onnx\n"
         "\n"
-        "sz = os.path.getsize('/content/guppylm.tar.gz') / 1e6\n"
-        "print(f'Package: /content/guppylm.tar.gz ({sz:.1f} MB)')\n"
+        "sz = os.path.getsize('/content/tokilm.tar.gz') / 1e6\n"
+        "print(f'Package: /content/tokilm.tar.gz ({sz:.1f} MB)')\n"
         "\n"
         "try:\n"
         "    from google.colab import files\n"
-        "    files.download('/content/guppylm.tar.gz')\n"
+        "    files.download('/content/tokilm.tar.gz')\n"
         "except ImportError:\n"
         "    print('Not in Colab — download manually from the file browser.')"
     ))
@@ -407,7 +376,7 @@ def build():
     return {
         "nbformat": 4, "nbformat_minor": 0,
         "metadata": {
-            "colab": {"provenance": [], "gpuType": "T4", "name": "GuppyLM — Train"},
+            "colab": {"provenance": [], "gpuType": "T4", "name": "TokiLM — Train"},
             "kernelspec": {"name": "python3", "display_name": "Python 3"},
             "language_info": {"name": "python"},
             "accelerator": "GPU",
@@ -417,35 +386,35 @@ def build():
 
 
 def build_use():
-    """Build the use_guppylm notebook — download model from HF and chat."""
+    """Build the use_tokilm notebook — download model from HF and chat."""
     cells = []
 
     cells.append(md(
-        "# GuppyLM — Chat with a Fish\n"
+        "# TokiLM — Chat with Toki Pona\n"
         "\n"
-        "Download a pre-trained 9M parameter fish LLM and chat with it. Just run all cells.\n"
+        "Download a pre-trained 9M parameter Toki Pona LLM and chat with it. Just run all cells.\n"
         "\n"
-        "**Model:** [arman-bd/guppylm-9M](https://huggingface.co/arman-bd/guppylm-9M)"
+        "**Model:** [Grizzlykw/tokilm-9m-chat](https://huggingface.co/Grizzlykw/tokilm-9m-chat)"
     ))
 
     cells.append(code(
         "# Setup + Download\n"
         "!pip install -q torch tokenizers huggingface_hub\n"
         "import os, shutil\n"
-        "if os.path.exists('/content/guppy'): shutil.rmtree('/content/guppy')\n"
-        "os.makedirs('/content/guppy'); os.chdir('/content/guppy')\n"
+        "if os.path.exists('/content/tokilm'): shutil.rmtree('/content/tokilm')\n"
+        "os.makedirs('/content/tokilm'); os.chdir('/content/tokilm')\n"
         "\n"
         "from huggingface_hub import snapshot_download\n"
-        "snapshot_download(repo_id='arman-bd/guppylm-9M', local_dir='.')\n"
+        "snapshot_download(repo_id='Grizzlykw/tokilm-9m-chat', local_dir='.')\n"
         "print('Model downloaded.')"
     ))
 
     cells.append(code(
         "# Load model\n"
-        "from inference import GuppyInference\n"
+        "from inference import TokiInference\n"
         "import torch\n"
         "\n"
-        "engine = GuppyInference('pytorch_model.bin', 'tokenizer.json',\n"
+        "engine = TokiInference('pytorch_model.bin', 'tokenizer.json',\n"
         "                        device='cuda' if torch.cuda.is_available() else 'cpu')\n"
         "\n"
         "def chat(prompt):\n"
@@ -454,8 +423,8 @@ def build_use():
         "    )['choices'][0]['message'].get('content', '').strip()\n"
         "\n"
         "# Quick test\n"
-        "for p in ['hi guppy', 'are you hungry', 'tell me a joke', 'what is the internet', 'goodnight guppy']:\n"
-        "    print(f'You> {p}\\nGuppy> {chat(p)}\\n')"
+        "for p in ['toki', 'sina pona', 'moku li pona', 'sina sona ala sona e toki pona', 'mi lape']:\n"
+        "    print(f'You> {p}\\nTokiLM> {chat(p)}\\n')"
     ))
 
     cells.append(code(
@@ -466,14 +435,14 @@ def build_use():
         "    except (KeyboardInterrupt, EOFError):\n"
         "        break\n"
         "    if not p or p.lower() in ('quit', 'exit', 'q'):\n"
-        "        print('Guppy> bye. i will continue being a fish.'); break\n"
-        "    print(f'Guppy> {chat(p)}\\n')"
+        "        print('TokiLM> bye.'); break\n"
+        "    print(f'TokiLM> {chat(p)}\\n')"
     ))
 
     return {
         "nbformat": 4, "nbformat_minor": 0,
         "metadata": {
-            "colab": {"provenance": [], "name": "GuppyLM — Chat"},
+            "colab": {"provenance": [], "name": "TokiLM — Chat"},
             "kernelspec": {"name": "python3", "display_name": "Python 3"},
             "language_info": {"name": "python"},
         },
@@ -491,5 +460,5 @@ def write_notebook(nb, filename):
 
 
 if __name__ == "__main__":
-    write_notebook(build(), "train_guppylm.ipynb")
-    write_notebook(build_use(), "use_guppylm.ipynb")
+    write_notebook(build(), "train_tokilm.ipynb")
+    write_notebook(build_use(), "use_tokilm.ipynb")
