@@ -1,23 +1,20 @@
 [project]
 name = "tokilm"
 version = "0.1.0"
-description = "Tiny Toki Pona language model"
+description = "Tiny Toki Pona language model based on GuppyLM"
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.13"
 dependencies = [
-    "torch==2.0.1",
-    "tokenizers>=0.19.0",
-    "tqdm>=4.65.0",
-    "numpy>=1.24.0",
-    "datasets>=2.14.0",
+  "datasets>=2.14",
+  "tokenizers>=0.19",
 ]
 
 [project.scripts]
 tokilm = "tokilm.__main__:main"
 
 [project.optional-dependencies]
-cpu = ["numpy>=1.24.0", "torch>=2.0.1"]
-gpu = ["numpy>=1.24.0", "torch>=2.0.1"]
+cpu = ["numpy>=1.26", "torch>=2.3"]
+gpu = ["numpy>=1.26", "torch>=2.3"]
 
 [tool.uv]
 conflicts = [
@@ -30,7 +27,7 @@ conflicts = [
 [tool.uv.sources]
 torch = [
   { index = "pytorch-cpu", extra = "cpu" },
-  { index = "pytorch-cu118", extra = "gpu" },
+  { index = "pytorch-cu128", extra = "gpu" },
 ]
 
 [[tool.uv.index]]
@@ -39,6 +36,6 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [[tool.uv.index]]
-name = "pytorch-cu118"
-url = "https://download.pytorch.org/whl/cu118"
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true

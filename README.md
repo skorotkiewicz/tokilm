@@ -16,6 +16,7 @@ uv run python -m tokilm train
 uv run python -m tokilm chat
 
 uv run python -m tokilm train --data-dir data --output-dir checkpoints --device cpu --max-steps 5000
+uv run python -m tokilm train --data-dir data --output-dir checkpoints --device cuda --max-steps 10000
 uv run python -m tokilm chat --checkpoint checkpoints/final_model.pt --tokenizer data/tokenizer.json --prompt "toki"
 ```
 

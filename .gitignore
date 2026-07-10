@@ -13,3 +13,4 @@ guppylm-src/
 checkpoints/
 .smoke-checkpoints/
 data/
+.env
