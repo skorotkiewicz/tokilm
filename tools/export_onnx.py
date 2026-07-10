@@ -20,10 +20,9 @@ import sys
 
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tokilm"))
-from config import TokiConfig
-from model import TokiLM
-
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from tokilm.config import TokiConfig
+from tokilm.model import TokiLM
 
 def load_env():
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")

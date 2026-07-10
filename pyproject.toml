@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "datasets>=2.14",
+  "onnxruntime>=1.27.0",
+  "onnxscript>=0.7.1",
   "tokenizers>=0.19",
 ]
 

@@ -1,5 +1,9 @@
 # TokiLM
 
+<p align="center">
+  <img src="assets/tokilm.png" alt="TokiLM" width="400"/>
+</p>
+
 <p align="center"><em>A ~9M parameter LLM that speaks Toki Pona.</em></p>
 
 <p align="center">

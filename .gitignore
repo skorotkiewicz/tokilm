@@ -1,17 +1,58 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+# -- Generated data & models
+data/
+dataset/
+checkpoints/
+*.pt
+*.bin
+*.onnx
 
-# Virtual environments
-.venv
+# -- Allow web/ assets for GitHub Pages
+!docs/*.onnx
+!docs/*.json
+
+# -- Python
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# -- Notebook checkpoints
+.ipynb_checkpoints/
+
+# -- OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -- IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# -- Secrets
+.env
+
+# -- Logs & temp
+*.log
+*.tmp
+*.bak
 
 guppylm-src/
-checkpoints/
-.smoke-checkpoints/
-data/
-.env
 hf_export/
