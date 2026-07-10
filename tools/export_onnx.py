@@ -91,7 +91,8 @@ def export_onnx(checkpoint_path, tokenizer_path, output_path, quantize=True, pus
             "input_ids": {0: "batch", 1: "seq_len"},
             "logits": {0: "batch", 1: "seq_len"},
         },
-        opset_version=17,
+        opset_version=18,
+        dynamo=False,
     )
 
     size_mb = os.path.getsize(output_path) / 1e6

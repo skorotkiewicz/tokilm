@@ -409,6 +409,21 @@ def build_use():
         "print('Model downloaded.')"
     ))
 
+    cells.append(md(
+        "## Source files\n"
+        "\n"
+        "The HF repo ships weights but not the model code, so write it here.\n"
+        "Relative imports are flattened to plain imports for Colab (no package)."
+    ))
+    for display_name, src_path in [
+        ("config.py", "tokilm/config.py"),
+        ("model.py", "tokilm/model.py"),
+        ("inference.py", "tokilm/inference.py"),
+    ]:
+        full_path = os.path.join(PROJECT_ROOT, src_path)
+        content = read_for_colab(full_path)
+        cells.append(code(f"%%writefile {display_name}\n{content}"))
+
     cells.append(code(
         "# Load model\n"
         "from inference import TokiInference\n"
